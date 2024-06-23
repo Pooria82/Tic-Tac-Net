@@ -1,13 +1,12 @@
 from pathlib import Path
 
-# from tkinter import *
+from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+# from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+import signupPage.signupGui
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
-
-import signupPage.signupGui
 
 
 def open_signup_page():
