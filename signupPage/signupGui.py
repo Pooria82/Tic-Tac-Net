@@ -299,7 +299,8 @@ def on_signup_button_click():
     username_regex = r"^(?=[a-zA-Z0-9._]{4,20}$)(?!.*[_.]{2})[^_.].*[^_.]$"
     # General Email Regex (RFC 5322 Official Standard)
     email_regex = r"^(?:[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])|[a-zA-Z0-9-]*[a-zA-Z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])$"
-    # Minimum eight characters, at least one uppercase letter, one lowercase letter, one number and one special character
+    # Minimum eight characters
+    # at least one uppercase letter, one lowercase letter, one number and one special character
     password_regex = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
 
     if not username:
@@ -332,6 +333,14 @@ def on_signup_button_click():
 
     if password != repeat_password:
         messagebox.showerror("Error", "Passwords do not match")
+        return
+
+    if not db_helper.is_unique_username(username):
+        messagebox.showerror("Error", "Username already exists")
+        return
+
+    if not db_helper.is_unique_email(email):
+        messagebox.showerror("Error", "This Email has already been registered.")
         return
 
     try:
