@@ -35,3 +35,12 @@ def save_user_to_db(username, email, password):
         "role": "player"
     }
     collection.insert_one(user)
+
+
+def validate_login(username, password):
+    collection = connect_to_db()
+    user = collection.find_one({"username": username})
+
+    if user and bcrypt.checkpw(password.encode('utf-8'), user["password"]):
+        return True
+    return False

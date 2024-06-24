@@ -1,11 +1,12 @@
-from pathlib import Path
-
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox, Toplevel, Label
+from pathlib import Path
+import os
+import re
 import loginPage.loginGui
 import db_helper
-import re
+import captcha_helper
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
@@ -26,6 +27,16 @@ def show_signup_window():
 
     window.geometry("1400x800")
     window.configure(bg="#FFFFFF")
+
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+
+    # Calculate the center position
+    x_cordinate = int((screen_width / 2) - (1400 / 2))
+    y_cordinate = int((screen_height / 2) - (800 / 2))
+
+    # Set the geometry of the window to the center of the screen
+    window.geometry(f"1400x800+{x_cordinate}+{y_cordinate}")
 
     canvas = Canvas(
         window,
@@ -286,6 +297,10 @@ def show_signup_window():
 
 
 def on_signup_button_click():
+    global window
+    global entry_1, entry_2, entry_3, entry_4
+
+    # Validate input fields
     username = entry_4.get()
     email = entry_3.get()
     password = entry_2.get()
@@ -324,7 +339,8 @@ def on_signup_button_click():
         return
 
     if not re.match(password_regex, password):
-        messagebox.showerror("Error", "Invalid password format")
+        messagebox.showerror("Error",
+                             "The password must contain at least 8 characters:\nAt least one UPPERCASE Letter, one lowercase letter, one Number and one Special character.")
         return
 
     if not repeat_password:
@@ -343,12 +359,53 @@ def on_signup_button_click():
         messagebox.showerror("Error", "This Email has already been registered.")
         return
 
-    try:
-        db_helper.save_user_to_db(username, email, password)
-        messagebox.showinfo("Success", "User registered successfully")
-        open_login_page()
-    except Exception as e:
-        messagebox.showerror("Error", f"An error occurred: {str(e)}")
+    def generate_and_show_captcha():
+        global captcha_text, captcha_image_path
+        captcha_text, captcha_image_path = captcha_helper.generate_captcha()
+
+        popup = Toplevel(window)
+        popup.title("CAPTCHA Verification")
+        popup.geometry("400x250")
+
+        # Center the popup window
+        window_width = window.winfo_width()
+        window_height = window.winfo_height()
+        popup_width = 400
+        popup_height = 250
+        position_right = int(window.winfo_x() + (window_width / 2) - (popup_width / 2))
+        position_down = int(window.winfo_y() + (window_height / 2) - (popup_height / 2))
+        popup.geometry(f"{popup_width}x{popup_height}+{position_right}+{position_down}")
+
+        captcha_image = PhotoImage(file=captcha_image_path)
+        captcha_image_label = Label(popup, image=captcha_image)
+        captcha_image_label.image = captcha_image
+        captcha_image_label.pack(pady=10)
+
+        entry_captcha = Entry(popup, font=("Helvetica", 14))
+        entry_captcha.pack(pady=10)
+
+        def on_verify():
+            user_captcha_input = entry_captcha.get()
+            if captcha_helper.validate_captcha(user_captcha_input, captcha_text):
+                # Proceed with sign-up logic
+                try:
+                    db_helper.save_user_to_db(username, email, password)
+                    messagebox.showinfo("Success", "User registered successfully")
+                    os.remove(captcha_image_path)
+                    popup.destroy()
+                    open_login_page()
+                except Exception as e:
+                    messagebox.showerror("Error", f"An error occurred: {str(e)}")
+            else:
+                messagebox.showerror("Error", "Invalid CAPTCHA")
+                os.remove(captcha_image_path)
+                popup.destroy()
+                generate_and_show_captcha()
+
+        verify_button = Button(popup, text="Verify", font=("Helvetica", 14), command=on_verify)
+        verify_button.pack(pady=20)
+
+    generate_and_show_captcha()
 
 
 if __name__ == "__main__":

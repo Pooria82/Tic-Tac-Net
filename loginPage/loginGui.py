@@ -1,9 +1,10 @@
 from pathlib import Path
 
-from tkinter import *
+# from tkinter import *
 # Explicit imports to satisfy Flake8
-# from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox
 import signupPage.signupGui
+import db_helper
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
@@ -18,12 +19,40 @@ def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH / Path(path)
 
 
+def on_login_button_click():
+    username = entry_2.get()
+    password = entry_1.get()
+
+    if not username:
+        messagebox.showerror("Error", "Username is required")
+        return
+
+    if not password:
+        messagebox.showerror("Error", "Password is required")
+        return
+
+    if db_helper.validate_login(username, password):
+        messagebox.showinfo("Success", "Login successful!")
+    else:
+        messagebox.showerror("Error", "Invalid username or password")
+
+
 def show_login_window():
-    global window
+    global window, entry_1, entry_2
     window = Tk()
 
     window.geometry("1400x800")
     window.configure(bg="#FFFFFF")
+
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+
+    # Calculate the center position
+    x_cordinate = int((screen_width / 2) - (1400 / 2))
+    y_cordinate = int((screen_height / 2) - (800 / 2))
+
+    # Set the geometry of the window to the center of the screen
+    window.geometry(f"1400x800+{x_cordinate}+{y_cordinate}")
 
     canvas = Canvas(
         window,
@@ -156,7 +185,7 @@ def show_login_window():
         image=button_image_2,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: print("button_2 clicked"),
+        command=on_login_button_click,
         relief="flat"
     )
     button_2.place(
