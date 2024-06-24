@@ -4,6 +4,7 @@ from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox, Top
 from pathlib import Path
 import os
 import re
+import ctypes
 import loginPage.loginGui
 import db_helper
 import captcha_helper
@@ -24,6 +25,11 @@ def relative_to_assets(path: str) -> Path:
 def show_signup_window():
     global window, entry_1, entry_2, entry_3, entry_4  # *** changed ***
     window = Tk()
+    window.title("Sign Up")
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    icon_path = os.path.join(base_dir, '..', 'images', 'newGameIcon.png')
+    window.iconphoto(False, PhotoImage(file=icon_path))
 
     window.geometry("1400x800")
     window.configure(bg="#FFFFFF")

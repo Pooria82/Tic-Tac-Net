@@ -1,8 +1,8 @@
-from pathlib import Path
-
 # from tkinter import *
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox
+from pathlib import Path
+import os
 import signupPage.signupGui
 import db_helper
 
@@ -40,6 +40,11 @@ def on_login_button_click():
 def show_login_window():
     global window, entry_1, entry_2
     window = Tk()
+    window.title("Login")
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    icon_path = os.path.join(base_dir, '..', 'images', 'newGameIcon.png')
+    window.iconphoto(False, PhotoImage(file=icon_path))
 
     window.geometry("1400x800")
     window.configure(bg="#FFFFFF")
