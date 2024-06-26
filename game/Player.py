@@ -11,7 +11,7 @@ class Player:
         else:
             self.type = "O"
         self.played_round = 0  # har moqe 3 beshe akharin harekat pak mishe
-        self.first_move_cordinate = tuple()
+        self.first_move_cordinate = []
 
     def getValidActions(self, board: Board) -> typing.List[
         Action]:
@@ -20,10 +20,11 @@ class Player:
 
     def doSet(self, row, column, board: Board):
         board.setToken(row, column, self.type)
-        if self.played_round == 0: self.first_move_cordinate = (row, column)
-        if self.played_round == 3:
-            board.board[self.first_move_cordinate[0]][self.first_move_cordinate[1]].type = None
-            self.played_round = 0
+        if self.played_round < 3: self.first_move_cordinate.append((row, column))
+        else:
+            board.board[self.first_move_cordinate[0][0]][self.first_move_cordinate[0][1]].type = None
+            self.first_move_cordinate.append((row, column))
+            self.first_move_cordinate.pop(0)
         self.played_round += 1
 
     def terminal_test(self, board: Board):
