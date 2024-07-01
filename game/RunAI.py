@@ -1,8 +1,9 @@
 from Player import Player
 from Board import Board
 from Action import Action, doAction
-player1 = Player("P1")
-player2 = Player("P2")
+HardMode=True
+player1 = Player("P1",HardMode)
+player2 = Player("P2",HardMode)
 board = Board()
 player1.doSet(1,1,board)
 player2.doSet(2,1,board)
