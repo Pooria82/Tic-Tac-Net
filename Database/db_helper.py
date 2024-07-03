@@ -1,5 +1,15 @@
+from pathlib import Path
 from pymongo import MongoClient
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+import os
+import jwt
 import bcrypt
+
+OUTPUT_PATH = Path(__file__).parent
+
+load_dotenv(Path(OUTPUT_PATH, '..', 'SECRETKEY', 'SECRET_KEY.env'))
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 
 def connect_to_db():
@@ -42,5 +52,29 @@ def validate_login(username, password):
     user = collection.find_one({"username": username})
 
     if user and bcrypt.checkpw(password.encode('utf-8'), user["password"]):
-        return True
-    return False
+        token = generate_jwt_token(username)
+        return token
+    return None
+
+
+# Function to generate JWT token
+def generate_jwt_token(username):
+    payload = {
+        'username': username,
+        'exp': datetime.utcnow() + timedelta(days=1)  # Token expiry time
+    }
+    token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+    return token
+
+
+# Function to verify JWT token
+def verify_jwt_token(token):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return payload['username']
+    except jwt.ExpiredSignatureError:
+        # Token expired
+        return None
+    except jwt.InvalidTokenError:
+        # Invalid token
+        return None

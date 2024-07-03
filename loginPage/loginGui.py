@@ -1,14 +1,19 @@
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox
+from tkinter import Tk, Canvas, Entry, Button, PhotoImage, messagebox
 from pathlib import Path
+from dotenv import load_dotenv
+import jwt
 import os
+from Database import db_helper
 import signupPage.signupGui
-import db_helper
-import menuPage.menuGui
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
+
+# Load environment variables
+load_dotenv(Path(OUTPUT_PATH, '..', 'SECRETKEY', 'SECRET_KEY.env'))
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 
 def open_signup_page():
@@ -18,6 +23,14 @@ def open_signup_page():
 
 def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH / Path(path)
+
+
+def generate_token(username):
+    payload = {
+        'username': username
+    }
+    token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+    return token
 
 
 def on_login_button_click():
@@ -33,11 +46,17 @@ def on_login_button_click():
         return
 
     if db_helper.validate_login(username, password):
+        token = generate_token(username)
         messagebox.showinfo("Success", "Login successful!")
         window.destroy()
-        menuPage.menuGui.show_menu_window()
+        open_menu_window()
     else:
         messagebox.showerror("Error", "Invalid username or password")
+
+
+def open_menu_window():
+    import menuPage.menuGui
+    menuPage.menuGui.show_menu_window()
 
 
 def show_login_window():

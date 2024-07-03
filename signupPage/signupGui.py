@@ -1,13 +1,12 @@
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox, Toplevel, Label
+from tkinter import Tk, Canvas, Entry, Button, PhotoImage, messagebox, Toplevel, Label
 from pathlib import Path
 import os
 import re
-import ctypes
 import loginPage.loginGui
-import db_helper
-import captcha_helper
+from Database import db_helper
+from signupPage import captcha_helper
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
