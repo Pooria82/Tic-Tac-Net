@@ -21,13 +21,13 @@ class Board:
         Returns true if the given row and col represent a valid location on
         the board.
         """
-        return row >= 0 and col >= 0 and row < 3 and col < 3
+        return 0 <= row < 3 and 0 <= col < 3
 
     def canSetToken(self, row, column) -> bool:
         """
         determines if the cordinates are valid for placing token.
         """
-        if self.board[row][column].type == None:
+        if self.board[row][column].type is None:
             return True
         else:
             return False
@@ -56,7 +56,7 @@ class Board:
         temp2 = []
         for i in range(3):
             temp1.append(self.board[i][i].type)
-            temp2.append(self.board[i][2-i].type)
+            temp2.append(self.board[i][2 - i].type)
 
         result.append(set(temp1))
         result.append(set(temp2))

@@ -1,6 +1,6 @@
 class Token:
     def __init__(self):
-        self.type=None
+        self.type = None
 
-    def setType(self,type):
-        self.type=type
+    def setType(self, type):
+        self.type = type

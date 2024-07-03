@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 import signupPage.signupGui
 import db_helper
+import menuPage.menuGui
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
@@ -33,6 +34,8 @@ def on_login_button_click():
 
     if db_helper.validate_login(username, password):
         messagebox.showinfo("Success", "Login successful!")
+        window.destroy()
+        menuPage.menuGui.show_menu_window()
     else:
         messagebox.showerror("Error", "Invalid username or password")
 
