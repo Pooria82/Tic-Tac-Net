@@ -1,14 +1,13 @@
 from pathlib import Path
 from pymongo import MongoClient
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
+import dotenv
 import os
 import jwt
 import bcrypt
 
 OUTPUT_PATH = Path(__file__).parent
-
-load_dotenv(Path(OUTPUT_PATH, '..', 'SECRETKEY', 'SECRET_KEY.env'))
+dotenv.load_dotenv(Path(OUTPUT_PATH, '..', 'SECRETKEY', 'SECRET_KEY.env'))
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 

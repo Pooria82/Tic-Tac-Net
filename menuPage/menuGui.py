@@ -1,22 +1,35 @@
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox
 from pathlib import Path
-from dotenv import load_dotenv
+import dotenv
 import jwt
 import os
-import loginPage.loginGui
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
+dotenv.load_dotenv(Path(OUTPUT_PATH, '..', 'SECRETKEY', 'SECRET_KEY.env'))
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 
 def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH / Path(path)
 
 
+def validate_token():
+    try:
+        with open('token.txt', 'r') as f:
+            token = f.read()
+        jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+    except Exception as e:
+        messagebox.showerror("Error", "Invalid or expired token")
+        exit_to_login()
+
+
 def exit_to_login():
+    os.remove('token.txt')
     window.destroy()
+    import loginPage.loginGui
     loginPage.loginGui.show_login_window()
 
 

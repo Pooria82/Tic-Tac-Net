@@ -4,16 +4,21 @@ from tkinter import Tk, Canvas, Entry, Button, PhotoImage, messagebox, Toplevel,
 from pathlib import Path
 import os
 import re
-import loginPage.loginGui
+import jwt
+import dotenv
+import hashlib
 from Database import db_helper
 from signupPage import captcha_helper
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
+dotenv.load_dotenv(Path(OUTPUT_PATH, '..', 'SECRETKEY', 'SECRET_KEY.env'))
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 
 def open_login_page():
     window.destroy()
+    import loginPage.loginGui
     loginPage.loginGui.show_login_window()
 
 
@@ -394,8 +399,12 @@ def on_signup_button_click():
             if captcha_helper.validate_captcha(user_captcha_input, captcha_text):
                 # Proceed with sign-up logic
                 try:
-                    db_helper.save_user_to_db(username, email, password)
-                    messagebox.showinfo("Success", "User registered successfully")
+                    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+                    db_helper.save_user_to_db(username, email, hashed_password)
+                    token = jwt.encode({'username': username}, SECRET_KEY, algorithm='HS256')
+                    with open('token.txt', 'w') as f:
+                        f.write(token)
+                    messagebox.showinfo("Success", "Signup successful!")
                     os.remove(captcha_image_path)
                     popup.destroy()
                     open_login_page()
