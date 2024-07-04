@@ -1,6 +1,6 @@
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox, Toplevel, Label;
 from pathlib import Path
 import dotenv
 import jwt
@@ -27,10 +27,50 @@ def validate_token():
 
 
 def exit_to_login():
-    os.remove('token.txt')
+    try:
+        os.remove('token.txt')
+    except FileNotFoundError:
+        pass
     window.destroy()
     import loginPage.loginGui
     loginPage.loginGui.show_login_window()
+
+
+def on_closing():
+    exit_to_login()
+
+
+def open_game_mode_popup():
+    popup = Toplevel(window)
+    popup.title("Select Game Mode")
+    popup.geometry("300x150")
+    popup.configure(bg="#333333")
+
+    label = Label(popup, text="SELECT GAME MODE", font=("Helvetica", 14, "bold"), bg="#333333", fg="#FFFFFF")
+    label.pack(pady=10)
+
+    normal_mode_button = Button(popup, text="Normal Mode", font=("Helvetica", 12), bg="#4CAF50", fg="#FFFFFF",
+                                relief="flat", command=lambda: select_mode("Normal"))
+    normal_mode_button.pack(pady=5)
+
+    hard_mode_button = Button(popup, text="Hard Mode", font=("Helvetica", 12), bg="#F44336", fg="#FFFFFF",
+                              relief="flat", command=lambda: select_mode("Hard"))
+    hard_mode_button.pack(pady=5)
+
+    # Center the popup window
+    popup.update_idletasks()
+    window_width = popup.winfo_width()
+    window_height = popup.winfo_height()
+    screen_width = popup.winfo_screenwidth()
+    screen_height = popup.winfo_screenheight()
+    position_right = int(screen_width / 2 - window_width / 2)
+    position_down = int(screen_height / 2 - window_height / 2)
+    popup.geometry(f"{window_width}x{window_height}+{position_right}+{position_down}")
+
+
+def select_mode(mode):
+    messagebox.showinfo("Game Mode Selected", f"You have selected {mode} mode!")
+    # Add your logic here to handle the selected game mode
 
 
 def show_menu_window():
@@ -39,7 +79,7 @@ def show_menu_window():
     window.title("Menu")
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    icon_path = os.path.join(base_dir, '..', 'images', 'newGameIcon.png')
+    icon_path = os.path.join(base_dir, '..', 'Images', 'newGameIcon.png')
     window.iconphoto(False, PhotoImage(file=icon_path))
 
     window.geometry("1400x800")
@@ -54,6 +94,9 @@ def show_menu_window():
 
     # Set the geometry of the window to the center of the screen
     window.geometry(f"1400x800+{x_cordinate}+{y_cordinate}")
+
+    window.protocol("WM_DELETE_WINDOW", on_closing)
+
 
     canvas = Canvas(
         window,
@@ -160,7 +203,7 @@ def show_menu_window():
         image=button_image_4,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: print("button_4 clicked"),
+        command=open_game_mode_popup,
         relief="flat"
     )
     button_4.place(

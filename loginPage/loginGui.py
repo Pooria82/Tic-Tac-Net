@@ -58,7 +58,7 @@ def show_login_window():
     window.title("Login")
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    icon_path = os.path.join(base_dir, '..', 'images', 'newGameIcon.png')
+    icon_path = os.path.join(base_dir, '..', 'Images', 'newGameIcon.png')
     window.iconphoto(False, PhotoImage(file=icon_path))
 
     window.geometry("1400x800")
