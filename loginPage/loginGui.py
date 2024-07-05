@@ -8,7 +8,6 @@ import os
 from Database import db_helper
 import signupPage.signupGui
 
-
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
 dotenv.load_dotenv(Path(OUTPUT_PATH, '..', 'SECRETKEY', 'SECRET_KEY.env'))
@@ -40,7 +39,7 @@ def on_login_button_click():
         token = jwt.encode({'username': username}, SECRET_KEY, algorithm='HS256')
         with open('token.txt', 'w') as f:
             f.write(token)
-        messagebox.showinfo("Success", "Login successful!")
+        # messagebox.showinfo("Success", "Login successful!")
         open_menu_window()
     else:
         messagebox.showerror("Error", "Invalid username or password")

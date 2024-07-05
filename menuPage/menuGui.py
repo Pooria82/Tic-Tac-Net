@@ -1,6 +1,6 @@
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox, Toplevel, Label;
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox, Toplevel, Label, Frame
 from pathlib import Path
 import dotenv
 import jwt
@@ -50,11 +50,11 @@ def open_game_mode_popup():
     label.pack(pady=10)
 
     normal_mode_button = Button(popup, text="Normal Mode", font=("Helvetica", 12), bg="#4CAF50", fg="#FFFFFF",
-                                relief="flat", command=lambda: select_mode("Normal"))
+                                relief="flat", command=lambda: select_mode("Normal", popup))
     normal_mode_button.pack(pady=5)
 
     hard_mode_button = Button(popup, text="Hard Mode", font=("Helvetica", 12), bg="#F44336", fg="#FFFFFF",
-                              relief="flat", command=lambda: select_mode("Hard"))
+                              relief="flat", command=lambda: select_mode("Hard", popup))
     hard_mode_button.pack(pady=5)
 
     # Center the popup window
@@ -68,9 +68,46 @@ def open_game_mode_popup():
     popup.geometry(f"{window_width}x{window_height}+{position_right}+{position_down}")
 
 
-def select_mode(mode):
-    messagebox.showinfo("Game Mode Selected", f"You have selected {mode} mode!")
-    # Add your logic here to handle the selected game mode
+def select_mode(mode, popup):
+    popup.destroy()
+    show_user_list_popup(mode)
+
+
+def get_available_users():  # TODO : Handle clients
+    return ["user1", "user2", "user3", "user4"]
+
+
+def show_user_list_popup(mode):
+    popup = Toplevel(window)
+    popup.title("Select Opponent")
+    popup.geometry("300x400")
+    popup.configure(bg="#333333")
+
+    label = Label(popup, text="SELECT OPPONENT", font=("Helvetica", 14, "bold"), bg="#333333", fg="#FFFFFF")
+    label.pack(pady=10)
+
+    users = get_available_users()
+    for user in users:
+        user_button = Button(popup, text=user, font=("Helvetica", 12), bg="#761818", fg="#FFFFFF",
+                             relief="flat", command=lambda u=user: start_game(u, mode, popup))
+        user_button.pack(pady=5, fill='x')
+
+    # Center the popup window
+    popup.update_idletasks()
+    window_width = popup.winfo_width()
+    window_height = popup.winfo_height()
+    screen_width = popup.winfo_screenwidth()
+    screen_height = popup.winfo_screenheight()
+    position_right = int(screen_width / 2 - window_width / 2)
+    position_down = int(screen_height / 2 - window_height / 2)
+    popup.geometry(f"{window_width}x{window_height}+{position_right}+{position_down}")
+
+
+def start_game(opponent, mode, popup):
+    popup.destroy()
+    window.destroy()
+    import gameBoard.gameBoardGui
+    gameBoard.gameBoardGui.show_game_board_window(opponent, mode)
 
 
 def show_menu_window():
@@ -96,7 +133,6 @@ def show_menu_window():
     window.geometry(f"1400x800+{x_cordinate}+{y_cordinate}")
 
     window.protocol("WM_DELETE_WINDOW", on_closing)
-
 
     canvas = Canvas(
         window,
