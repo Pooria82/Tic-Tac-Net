@@ -5,8 +5,9 @@ from pathlib import Path
 import dotenv
 import jwt
 import os
-from Database import db_helper
 import signupPage.signupGui
+from Database import db_helper
+from client import connect_to_server, send_message
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
@@ -40,6 +41,8 @@ def on_login_button_click():
         with open('token.txt', 'w') as f:
             f.write(token)
         # messagebox.showinfo("Success", "Login successful!")
+        server_socket = connect_to_server()
+        send_message(server_socket, f"LOGIN:{username}:{password}")
         open_menu_window()
     else:
         messagebox.showerror("Error", "Invalid username or password")

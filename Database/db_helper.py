@@ -77,3 +77,14 @@ def verify_jwt_token(token):
     except jwt.InvalidTokenError:
         # Invalid token
         return None
+
+
+def save_game_to_db(player1, player2, result):
+    collection = connect_to_db()
+    game = {
+        "player1": player1,
+        "player2": player2,
+        "result": result,
+        "timestamp": datetime.utcnow()
+    }
+    collection.insert_one(game)

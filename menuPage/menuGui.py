@@ -49,11 +49,11 @@ def open_game_mode_popup():
     label = Label(popup, text="SELECT GAME MODE", font=("Helvetica", 14, "bold"), bg="#333333", fg="#FFFFFF")
     label.pack(pady=10)
 
-    normal_mode_button = Button(popup, text="Normal Mode", font=("Helvetica", 12), bg="#4CAF50", fg="#FFFFFF",
+    normal_mode_button = Button(popup, text="NormalMode", font=("Helvetica", 12), bg="#4CAF50", fg="#FFFFFF",
                                 relief="flat", command=lambda: select_mode("Normal", popup))
     normal_mode_button.pack(pady=5)
 
-    hard_mode_button = Button(popup, text="Hard Mode", font=("Helvetica", 12), bg="#F44336", fg="#FFFFFF",
+    hard_mode_button = Button(popup, text="HardMode", font=("Helvetica", 12), bg="#F44336", fg="#FFFFFF",
                               relief="flat", command=lambda: select_mode("Hard", popup))
     hard_mode_button.pack(pady=5)
 
@@ -106,8 +106,8 @@ def show_user_list_popup(mode):
 def start_game(opponent, mode, popup):
     popup.destroy()
     window.destroy()
-    import gameBoard.gameBoardGui
-    gameBoard.gameBoardGui.show_game_board_window(opponent, mode)
+    import gamePage.gameBoardGui
+    gamePage.gameBoardGui.show_game_board_window(opponent, mode)
 
 
 def show_menu_window():

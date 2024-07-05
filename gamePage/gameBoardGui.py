@@ -1,7 +1,8 @@
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage ,Label
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Label
 from pathlib import Path
+from client import send_message
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
@@ -12,8 +13,18 @@ def relative_to_assets(path: str) -> Path:
 
 
 def show_game_board_window(opponent, mode):
+    global server_socket
+
     window = Tk()
     window.title("Game Board")
+
+    # Define board and other elements
+    board = [['' for _ in range(3)] for _ in range(3)]
+
+    def make_move(row, col):
+        import game.NormalMode.game_logic
+        if game.NormalMode.game_logic.make_move(board, row, col, "X"):
+            send_message(server_socket, f"MOVE:{row}:{col}")
 
     window.geometry("612x612")
     window.configure(bg="#FFFFFF")
@@ -214,6 +225,3 @@ def show_game_board_window(opponent, mode):
     )
     window.resizable(False, False)
     window.mainloop()
-
-
-show_game_board_window("x","y")
