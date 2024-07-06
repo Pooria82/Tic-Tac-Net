@@ -9,12 +9,8 @@ from menuPage import menuGui
 SERVER_HOST = '127.0.0.1'
 SERVER_PORT = 5555
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((SERVER_HOST, SERVER_PORT))
-
 client_socket = None
 token = None
-
 
 def connect_to_server():
     global client_socket
@@ -22,10 +18,8 @@ def connect_to_server():
     client_socket.connect((SERVER_HOST, SERVER_PORT))
     return client_socket
 
-
 def send_message(sock, message):
     sock.send(message.encode())
-
 
 def receive_messages():
     global token
@@ -37,7 +31,6 @@ def receive_messages():
         except Exception as e:
             print(f"Error receiving message: {str(e)}")
             break
-
 
 def handle_message(message):
     global token
@@ -58,14 +51,13 @@ def handle_message(message):
         menuGui.update_online_users(online_users)
     elif command == "INVITE":
         from_user = params[0]
-        response = messagebox.askyesno("Game Invitation",
-                                       f"You have been invited to a game by {from_user}. Do you accept?")
+        response = messagebox.askyesno("Game Invitation", f"You have been invited to a game by {from_user}. Do you accept?")
         if response:
-            send_message(f"INVITE_RESPONSE:{from_user}:ACCEPT")
+            send_message(client_socket, f"INVITE_RESPONSE:{from_user}:ACCEPT")
             from gamePage import gameBoardGui  # Import locally to avoid circular import
             gameBoardGui.show_game_board_window(from_user, 'P2P')
         else:
-            send_message(f"INVITE_RESPONSE:{from_user}:REJECT")
+            send_message(client_socket, f"INVITE_RESPONSE:{from_user}:REJECT")
     elif command == "INVITE_RESPONSE":
         response = params[0]
         if response == "ACCEPT":
@@ -80,38 +72,31 @@ def handle_message(message):
         from gamePage import gameBoardGui  # Import locally to avoid circular import
         gameBoardGui.update_game_board(from_user, move)
 
-
 def login(username, password):
-    send_message(f"LOGIN:{username}:{password}")
-
+    send_message(client_socket, f"LOGIN:{username}:{password}")
 
 def signup(username, email, password):
-    send_message(f"SIGNUP:{username}:{email}:{password}")
-
+    send_message(client_socket, f"SIGNUP:{username}:{email}:{password}")
 
 def fetch_users():
-    send_message(f"FETCH_USERS:{token}")
-
+    send_message(client_socket, f"FETCH_USERS:{token}")
 
 def send_invite(to_user):
-    send_message(f"INVITE:{to_user}")
-
+    send_message(client_socket, f"INVITE:{to_user}")
 
 def send_invite_response(from_user, response):
-    send_message(f"INVITE_RESPONSE:{from_user}:{response}")
-
+    send_message(client_socket, f"INVITE_RESPONSE:{from_user}:{response}")
 
 def send_move(to_user, move):
-    send_message(f"MOVE:{to_user}:{move}")
-
+    send_message(client_socket, f"MOVE:{to_user}:{move}")
 
 def start_receiving_thread():
     receiving_thread = threading.Thread(target=receive_messages)
     receiving_thread.daemon = True
     receiving_thread.start()
 
-
 if __name__ == "__main__":
     connect_to_server()
     start_receiving_thread()
     loginGui.show_login_window()
+    fetch_users()

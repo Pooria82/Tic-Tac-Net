@@ -1,10 +1,9 @@
-# from tkinter import *
-# Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox, Toplevel, Label, Frame, Listbox
+from tkinter import Tk, Canvas, Button, PhotoImage, messagebox, Toplevel, Label, Listbox
 from pathlib import Path
 import dotenv
 import jwt
 import os
+import threading
 import client
 
 OUTPUT_PATH = Path(__file__).parent
@@ -14,10 +13,8 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 online_users_listbox = None
 
-
 def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH / Path(path)
-
 
 def validate_token():
     try:
@@ -28,7 +25,6 @@ def validate_token():
         messagebox.showerror("Error", "Invalid or expired token")
         exit_to_login()
 
-
 def exit_to_login():
     try:
         os.remove('token.txt')
@@ -38,10 +34,8 @@ def exit_to_login():
     import loginPage.loginGui
     loginPage.loginGui.show_login_window()
 
-
 def on_closing():
     exit_to_login()
-
 
 def open_game_mode_popup():
     popup = Toplevel(window)
@@ -70,16 +64,12 @@ def open_game_mode_popup():
     position_down = int(screen_height / 2 - window_height / 2)
     popup.geometry(f"{window_width}x{window_height}+{position_right}+{position_down}")
 
-
 def select_mode(mode, popup):
     popup.destroy()
     show_user_list_popup(mode)
 
-
-def get_available_users():  # TODO : Handle clients
-    # return ["user1", "user2", "user3", "user4"]
+def get_available_users():
     client.fetch_users()
-
 
 def show_user_list_popup(mode):
     popup = Toplevel(window)
@@ -108,7 +98,6 @@ def show_user_list_popup(mode):
 
     online_users_listbox.bind("<Double-1>", lambda event: start_game(online_users_listbox.get(online_users_listbox.curselection()), mode, popup))
 
-
 def update_online_users(users):
     global online_users_listbox
     if online_users_listbox:
@@ -116,13 +105,11 @@ def update_online_users(users):
         for user in users:
             online_users_listbox.insert('end', user)
 
-
 def start_game(opponent, mode, popup):
     popup.destroy()
     window.destroy()
     import gamePage.gameBoardGui
     gamePage.gameBoardGui.show_game_board_window(opponent, mode)
-
 
 def show_menu_window():
     global window
@@ -282,3 +269,9 @@ def show_menu_window():
     validate_token()
     client.start_receiving_thread()
     window.mainloop()
+
+def start_gui():
+    threading.Thread(target=show_menu_window).start()
+
+if __name__ == "__main__":
+    start_gui()
