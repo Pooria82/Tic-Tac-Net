@@ -30,8 +30,8 @@ def handle_message(client_socket, addr, message):
 
     if command == "LOGIN":
         username, password = params
-        token = db_helper.validate_login(username, password)
-        if token:
+        if db_helper.validate_login(username, password):
+            token = jwt.encode({'username': username}, SECRET_KEY, algorithm='HS256')
             users[token] = username
             clients[client_socket] = token
             client_socket.send(f"LOGIN_SUCCESS:{token}".encode())

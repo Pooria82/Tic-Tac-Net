@@ -225,3 +225,8 @@ def show_game_board_window(opponent, mode):
     )
     window.resizable(False, False)
     window.mainloop()
+
+
+def update_game_board(from_user, move):
+    # Implement your game board update logic here
+    pass

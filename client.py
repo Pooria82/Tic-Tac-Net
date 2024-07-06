@@ -1,11 +1,9 @@
 import socket
 import threading
-import os
 from tkinter import messagebox
-from loginPage import loginGui
 from signupPage import signupGui
+from loginPage import loginGui
 from menuPage import menuGui
-from gamePage import gameBoardGui
 
 # Server configuration
 SERVER_HOST = '127.0.0.1'
@@ -14,11 +12,19 @@ SERVER_PORT = 5555
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((SERVER_HOST, SERVER_PORT))
 
+client_socket = None
 token = None
 
 
-def send_message(message):
-    client_socket.send(message.encode())
+def connect_to_server():
+    global client_socket
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((SERVER_HOST, SERVER_PORT))
+    return client_socket
+
+
+def send_message(sock, message):
+    sock.send(message.encode())
 
 
 def receive_messages():
@@ -56,6 +62,7 @@ def handle_message(message):
                                        f"You have been invited to a game by {from_user}. Do you accept?")
         if response:
             send_message(f"INVITE_RESPONSE:{from_user}:ACCEPT")
+            from gamePage import gameBoardGui  # Import locally to avoid circular import
             gameBoardGui.show_game_board_window(from_user, 'P2P')
         else:
             send_message(f"INVITE_RESPONSE:{from_user}:REJECT")
@@ -63,12 +70,14 @@ def handle_message(message):
         response = params[0]
         if response == "ACCEPT":
             messagebox.showinfo("Info", "Your invitation has been accepted.")
+            from gamePage import gameBoardGui  # Import locally to avoid circular import
             gameBoardGui.show_game_board_window(params[1], 'P2P')
         else:
             messagebox.showinfo("Info", "Your invitation has been rejected.")
     elif command == "MOVE":
         from_user = params[0]
         move = params[1]
+        from gamePage import gameBoardGui  # Import locally to avoid circular import
         gameBoardGui.update_game_board(from_user, move)
 
 
@@ -103,5 +112,6 @@ def start_receiving_thread():
 
 
 if __name__ == "__main__":
+    connect_to_server()
     start_receiving_thread()
     loginGui.show_login_window()

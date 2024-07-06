@@ -1,15 +1,18 @@
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox, Toplevel, Label, Frame
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, messagebox, Toplevel, Label, Frame, Listbox
 from pathlib import Path
 import dotenv
 import jwt
 import os
+import client
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
 dotenv.load_dotenv(Path(OUTPUT_PATH, '..', 'SECRETKEY', 'SECRET_KEY.env'))
 SECRET_KEY = os.getenv("SECRET_KEY")
+
+online_users_listbox = None
 
 
 def relative_to_assets(path: str) -> Path:
@@ -74,7 +77,8 @@ def select_mode(mode, popup):
 
 
 def get_available_users():  # TODO : Handle clients
-    return ["user1", "user2", "user3", "user4"]
+    # return ["user1", "user2", "user3", "user4"]
+    client.fetch_users()
 
 
 def show_user_list_popup(mode):
@@ -86,11 +90,11 @@ def show_user_list_popup(mode):
     label = Label(popup, text="SELECT OPPONENT", font=("Helvetica", 14, "bold"), bg="#333333", fg="#FFFFFF")
     label.pack(pady=10)
 
-    users = get_available_users()
-    for user in users:
-        user_button = Button(popup, text=user, font=("Helvetica", 12), bg="#761818", fg="#FFFFFF",
-                             relief="flat", command=lambda u=user: start_game(u, mode, popup))
-        user_button.pack(pady=5, fill='x')
+    global online_users_listbox
+    online_users_listbox = Listbox(popup, font=("Helvetica", 12), bg="#761818", fg="#FFFFFF", relief="flat")
+    online_users_listbox.pack(pady=5, fill='x')
+
+    get_available_users()
 
     # Center the popup window
     popup.update_idletasks()
@@ -101,6 +105,16 @@ def show_user_list_popup(mode):
     position_right = int(screen_width / 2 - window_width / 2)
     position_down = int(screen_height / 2 - window_height / 2)
     popup.geometry(f"{window_width}x{window_height}+{position_right}+{position_down}")
+
+    online_users_listbox.bind("<Double-1>", lambda event: start_game(online_users_listbox.get(online_users_listbox.curselection()), mode, popup))
+
+
+def update_online_users(users):
+    global online_users_listbox
+    if online_users_listbox:
+        online_users_listbox.delete(0, 'end')
+        for user in users:
+            online_users_listbox.insert('end', user)
 
 
 def start_game(opponent, mode, popup):
@@ -265,4 +279,6 @@ def show_menu_window():
         image=image_image_5
     )
     window.resizable(False, False)
+    validate_token()
+    client.start_receiving_thread()
     window.mainloop()

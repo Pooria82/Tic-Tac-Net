@@ -7,12 +7,14 @@ import jwt
 import os
 import signupPage.signupGui
 from Database import db_helper
-from client import connect_to_server, send_message
+from client import connect_to_server, send_message, start_receiving_thread
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r".\assets\frame0")
 dotenv.load_dotenv(Path(OUTPUT_PATH, '..', 'SECRETKEY', 'SECRET_KEY.env'))
 SECRET_KEY = os.getenv("SECRET_KEY")
+
+server_socket = None  # Add a global variable for the server socket
 
 
 def open_signup_page():
@@ -43,6 +45,7 @@ def on_login_button_click():
         # messagebox.showinfo("Success", "Login successful!")
         server_socket = connect_to_server()
         send_message(server_socket, f"LOGIN:{username}:{password}")
+        start_receiving_thread()  # Start the receiving thread
         open_menu_window()
     else:
         messagebox.showerror("Error", "Invalid username or password")
