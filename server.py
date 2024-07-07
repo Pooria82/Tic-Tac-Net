@@ -55,16 +55,18 @@ def handle_message(client_socket, addr, message):
     elif command == "INVITE":
         from_user = users.get(clients.get(client_socket))
         to_user = params[0]
+        mode = params[1]
         to_user_socket = get_socket_by_username(to_user)
         if to_user_socket:
-            to_user_socket.send(f"INVITE:{from_user}".encode())
+            to_user_socket.send(f"INVITE:{from_user}:{mode}".encode())
 
     elif command == "INVITE_RESPONSE":
         from_user = params[0]
         response = params[1]
+        mode = params[2]
         from_user_socket = get_socket_by_username(from_user)
         if from_user_socket:
-            from_user_socket.send(f"INVITE_RESPONSE:{response}".encode())
+            from_user_socket.send(f"INVITE_RESPONSE:{response}:{users[clients[client_socket]]}:{mode}".encode())
 
     elif command == "MOVE":
         from_user = users.get(clients.get(client_socket))
@@ -73,6 +75,7 @@ def handle_message(client_socket, addr, message):
         to_user_socket = get_socket_by_username(to_user)
         if to_user_socket:
             to_user_socket.send(f"MOVE:{from_user}:{move}".encode())
+
 
 
 def get_socket_by_username(username):
