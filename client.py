@@ -4,6 +4,7 @@ from tkinter import messagebox
 from signupPage import signupGui
 from loginPage import loginGui
 from menuPage import menuGui
+from p2p import *
 
 # Server configuration
 SERVER_HOST = '127.0.0.1'
@@ -31,6 +32,11 @@ def receive_messages():
         except Exception as e:
             print(f"Error receiving message: {str(e)}")
             break
+def listen():
+    while True:
+        client_socket, addr = server_socket.accept()
+        if client_socket!=None:
+            print(f"Connection from {addr}")
 
 def handle_message(message):
     global token
@@ -55,6 +61,9 @@ def handle_message(message):
         response = messagebox.askyesno("Game Invitation", f"You have been invited to a game by {from_user}. Mode: {mode}. Do you accept?")
         if response:
             send_message(client_socket, f"INVITE_RESPONSE:{from_user}:ACCEPT:{mode}")
+            global client_socket
+            server_bind(client_socket)
+            threading.Thread(target=listen, args=()).start()
             from gamePage import gameBoardGui  # Import locally to avoid circular import
             gameBoardGui.show_game_board_window(from_user, mode)
         else:
@@ -64,6 +73,7 @@ def handle_message(message):
         mode = params[2]
         if response == "ACCEPT":
             messagebox.showinfo("Info", "Your invitation has been accepted.")
+            connect_to_server(params[1])
             from gamePage import gameBoardGui  # Import locally to avoid circular import
             gameBoardGui.show_game_board_window(params[1], mode)
         else:
