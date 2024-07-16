@@ -1,117 +1,170 @@
-import socket
-import threading
-from tkinter import messagebox
-from signupPage import signupGui
-from loginPage import loginGui
-from menuPage import menuGui
+import requests
+import json
+import asyncio
+import websockets
+import socketio
 
-# Server configuration
-SERVER_HOST = '127.0.0.1'
-SERVER_PORT = 5555
+base_url = 'http://127.0.0.1:5000'
+ws_url = 'http://127.0.0.1:5000'  # Use http for Socket.IO connection
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((SERVER_HOST, SERVER_PORT))
-
-client_socket = None
-token = None
+sio = socketio.Client()
 
 
-def connect_to_server():
-    global client_socket
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((SERVER_HOST, SERVER_PORT))
-    return client_socket
+@sio.event
+def connect():
+    print('Connection established')
+    sio.emit('register', {'username': current_user})
 
 
-def send_message(sock, message):
-    sock.send(message.encode())
+@sio.event
+def disconnect():
+    print('Disconnected from server')
 
 
-def receive_messages():
-    global token
+@sio.event
+def receive_invite(data):
+    inviter = data.get('inviter')
+    print(f"Received invite from {inviter}")
+    response = input(f"Do you want to accept the invite from {inviter}? (yes/no): ")
+    if response.lower() == 'yes':
+        print("Invite accepted.")
+    else:
+        print("Invite rejected.")
+
+
+current_user = None
+
+
+def main():
+    global current_user
     while True:
-        try:
-            message = client_socket.recv(1024).decode()
-            if message:
-                handle_message(message)
-        except Exception as e:
-            print(f"Error receiving message: {str(e)}")
+        print_menu()
+        choice = input("Choose an option (1/2/3): ")
+
+        if choice == '1':
+            username, password = login()
+            if username:
+                current_user = username
+                sio.connect(ws_url)
+                user_info = {'username': username, 'password': password}
+                user_menu(base_url, user_info)
+        elif choice == '2':
+            signup()
+        elif choice == '3':
             break
-
-
-def handle_message(message):
-    global token
-    command, *params = message.split(':')
-    if command == "LOGIN_SUCCESS":
-        token = params[0]
-        messagebox.showinfo("Success", "Login successful!")
-        menuGui.show_menu_window()
-    elif command == "LOGIN_FAILURE":
-        messagebox.showerror("Error", "Login failed. Please check your username and password.")
-    elif command == "SIGNUP_SUCCESS":
-        messagebox.showinfo("Success", "Signup successful! Please log in.")
-        loginGui.show_login_window()
-    elif command == "SIGNUP_FAILURE":
-        messagebox.showerror("Error", "Signup failed. Username or email may already be taken.")
-    elif command == "USER_LIST":
-        online_users = params[0].split(',')
-        menuGui.update_online_users(online_users)
-    elif command == "INVITE":
-        from_user = params[0]
-        response = messagebox.askyesno("Game Invitation",
-                                       f"You have been invited to a game by {from_user}. Do you accept?")
-        if response:
-            send_message(f"INVITE_RESPONSE:{from_user}:ACCEPT")
-            from gamePage import gameBoardGui  # Import locally to avoid circular import
-            gameBoardGui.show_game_board_window(from_user, 'P2P')
         else:
-            send_message(f"INVITE_RESPONSE:{from_user}:REJECT")
-    elif command == "INVITE_RESPONSE":
-        response = params[0]
-        if response == "ACCEPT":
-            messagebox.showinfo("Info", "Your invitation has been accepted.")
-            from gamePage import gameBoardGui  # Import locally to avoid circular import
-            gameBoardGui.show_game_board_window(params[1], 'P2P')
+            print("Invalid choice. Please enter 1, 2, or 3.")
+
+
+def print_menu():
+    print("\n1. Login")
+    print("2. Signup")
+    print("3. Exit")
+
+
+def login():
+    print("\nLogin:")
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+
+    login_data = {'username': username, 'password': password}
+    response = requests.post(f"{base_url}/login", json=login_data)
+
+    if response.status_code == 200:
+        print("Login successful.")
+        return username, password
+    else:
+        print("Login failed. Please check your credentials.")
+        return None, None
+
+
+def signup():
+    print("\nSignup:")
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+    confirm_password = input("Confirm password: ")
+
+    if password != confirm_password:
+        print("Passwords do not match.")
+        return
+
+    signup_data = {'username': username, 'password': password}
+    response = requests.post(f"{base_url}/signup", json=signup_data)
+
+    if response.status_code == 200:
+        print("Signup successful.")
+    else:
+        print("Signup failed. Username may already exist.")
+
+
+def user_menu(base_url, user_info):
+    while True:
+        print("\nUser Menu:")
+        print("1. Match")
+        print("2. View Match History")
+        print("3. Profile")
+        print("4. Exit")
+        choice = input("Choose an option (1/2/3/4): ")
+
+        if choice == '1':
+            online_users = get_online_users(base_url)
+            if online_users:
+                print("Online users:", online_users)
+                invite_user = input("Enter username to invite for a match: ")
+                invite(base_url, user_info['username'], invite_user)
+        elif choice == '2':
+            view_history(user_info['username'])
+        elif choice == '3':
+            view_profile(user_info['username'])
+        elif choice == '4':
+            logout(user_info['username'])
+            break
         else:
-            messagebox.showinfo("Info", "Your invitation has been rejected.")
-    elif command == "MOVE":
-        from_user = params[0]
-        move = params[1]
-        from gamePage import gameBoardGui  # Import locally to avoid circular import
-        gameBoardGui.update_game_board(from_user, move)
+            print("Invalid choice. Please enter 1, 2, 3, or 4.")
 
 
-def login(username, password):
-    send_message(f"LOGIN:{username}:{password}")
+def get_online_users(base_url):
+    response = requests.get(f"{base_url}/online_users")
+    if response.status_code == 200:
+        return response.json().get('online_users', [])
+    else:
+        print("Failed to get online users.")
+        return []
 
 
-def signup(username, email, password):
-    send_message(f"SIGNUP:{username}:{email}:{password}")
+def invite(base_url, inviter_username, invited_username):
+    sio.emit('invite', {'inviter': inviter_username, 'invitee': invited_username})
 
 
-def fetch_users():
-    send_message(f"FETCH_USERS:{token}")
+def view_history(username):
+    view_data = {'username': username}
+    response = requests.post(f"{base_url}/view", json=view_data)
+
+    if response.status_code == 200:
+        print(response.json()['message'])
+    else:
+        print("Failed to view match history.")
 
 
-def send_invite(to_user):
-    send_message(f"INVITE:{to_user}")
+def view_profile(username):
+    profile_data = {'username': username}
+    response = requests.post(f"{base_url}/profile", json=profile_data)
+
+    if response.status_code == 200:
+        print("Profile:", response.json())
+    else:
+        print("Failed to view profile.")
 
 
-def send_invite_response(from_user, response):
-    send_message(f"INVITE_RESPONSE:{from_user}:{response}")
+def logout(username):
+    logout_data = {'username': username}
+    response = requests.post(f"{base_url}/logout", json=logout_data)
+
+    if response.status_code == 200:
+        print("Logout successful.")
+    else:
+        print("Failed to logout.")
 
 
-def send_move(to_user, move):
-    send_message(f"MOVE:{to_user}:{move}")
-
-
-def start_receiving_thread():
-    receiving_thread = threading.Thread(target=receive_messages)
-    receiving_thread.daemon = True
-    receiving_thread.start()
-
-
-if __name__ == "__main__":
-    connect_to_server()
-    start_receiving_thread()
-    loginGui.show_login_window()
+if __name__ == '__main__':
+    main()
