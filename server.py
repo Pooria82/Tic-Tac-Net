@@ -1,106 +1,131 @@
-import socket
-import threading
-from Database import db_helper
-import jwt
+from flask import Flask, request, jsonify
+from flask_socketio import SocketIO, emit, join_room, leave_room
+import json
 import os
-import dotenv
+from datetime import datetime
 
-dotenv.load_dotenv()
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app)
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-clients = {}
-users = {}
+DATABASE_DIR = 'Database'
+USERS_FILE = os.path.join(DATABASE_DIR, 'users.json')
+SIGNUP_LOG_FILE = os.path.join(DATABASE_DIR, 'signup_log.json')
+LOGIN_LOG_FILE = os.path.join(DATABASE_DIR, 'login_log.json')
 
-
-def handle_client(client_socket, addr):
-    while True:
-        try:
-            message = client_socket.recv(1024).decode()
-            if message:
-                print(f"Received message from {addr}: {message}")
-                handle_message(client_socket, addr, message)
-        except Exception as e:
-            print(f"Error handling message from {addr}: {str(e)}")
-            remove_client(client_socket, addr)
-            break
+if not os.path.exists(DATABASE_DIR):
+    os.makedirs(DATABASE_DIR)
 
 
-def handle_message(client_socket, addr, message):
-    command, *params = message.split(':')
-
-    if command == "LOGIN":
-        username, password = params
-        if db_helper.validate_login(username, password):
-            token = jwt.encode({'username': username}, SECRET_KEY, algorithm='HS256')
-            users[token] = username
-            clients[client_socket] = token
-            client_socket.send(f"LOGIN_SUCCESS:{token}".encode())
-        else:
-            client_socket.send("LOGIN_FAILURE".encode())
-
-    elif command == "SIGNUP":
-        username, email, password = params
-        if db_helper.is_unique_username(username) and db_helper.is_unique_email(email):
-            db_helper.save_user_to_db(username, email, password)
-            client_socket.send("SIGNUP_SUCCESS".encode())
-        else:
-            client_socket.send("SIGNUP_FAILURE".encode())
-
-    elif command == "FETCH_USERS":
-        token = clients.get(client_socket)
-        if token:
-            online_users = [users[client_token] for client_token in clients.values() if client_token != token]
-            client_socket.send(f"USER_LIST:{','.join(online_users)}".encode())
-
-    elif command == "INVITE":
-        from_user = users.get(clients.get(client_socket))
-        to_user = params[0]
-        to_user_socket = get_socket_by_username(to_user)
-        if to_user_socket:
-            to_user_socket.send(f"INVITE:{from_user}".encode())
-
-    elif command == "INVITE_RESPONSE":
-        from_user = params[0]
-        response = params[1]
-        from_user_socket = get_socket_by_username(from_user)
-        if from_user_socket:
-            from_user_socket.send(f"INVITE_RESPONSE:{response}".encode())
-
-    elif command == "MOVE":
-        from_user = users.get(clients.get(client_socket))
-        to_user = params[0]
-        move = params[1]
-        to_user_socket = get_socket_by_username(to_user)
-        if to_user_socket:
-            to_user_socket.send(f"MOVE:{from_user}:{move}".encode())
+def load_users():
+    if os.path.isfile(USERS_FILE):
+        with open(USERS_FILE, 'r') as f:
+            return json.load(f)
+    return []
 
 
-def get_socket_by_username(username):
-    for client_socket, token in clients.items():
-        if users.get(token) == username:
-            return client_socket
-    return None
+def save_users(users):
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f)
 
 
-def remove_client(client_socket, addr):
-    token = clients.pop(client_socket, None)
-    if token:
-        users.pop(token, None)
-    client_socket.close()
-    print(f"Connection from {addr} closed")
+def log_event(log_file, event):
+    with open(log_file, 'a') as f:
+        f.write(json.dumps(event) + '\n')
 
 
-def start_server():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('0.0.0.0', 5555))
-    server_socket.listen(5)
-    print("Server started on port 5555")
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
 
-    while True:
-        client_socket, addr = server_socket.accept()
-        print(f"Connection from {addr}")
-        threading.Thread(target=handle_client, args=(client_socket, addr)).start()
+    users = load_users()
+    if any(user['username'] == username for user in users):
+        return jsonify({"message": "Username already exists"}), 400
+
+    user = {'username': username, 'password': password, 'online': False}
+    users.append(user)
+    save_users(users)
+
+    log_event(SIGNUP_LOG_FILE, {'username': username, 'timestamp': str(datetime.now()), 'event': 'signup'})
+
+    return jsonify({"message": "Signup successful"}), 200
 
 
-if __name__ == "__main__":
-    start_server()
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    users = load_users()
+    for user in users:
+        if user['username'] == username and user['password'] == password:
+            user['online'] = True
+            save_users(users)
+            log_event(LOGIN_LOG_FILE, {'username': username, 'timestamp': str(datetime.now()), 'event': 'login'})
+            socketio.emit('user_online', {'username': username})
+            return jsonify({"message": "Login successful"}), 200
+
+    return jsonify({"message": "Invalid credentials"}), 401
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    data = request.get_json()
+    username = data.get('username')
+
+    users = load_users()
+    for user in users:
+        if user['username'] == username:
+            user['online'] = False
+            save_users(users)
+            log_event(LOGIN_LOG_FILE, {'username': username, 'timestamp': str(datetime.now()), 'event': 'logout'})
+            socketio.emit('user_offline', {'username': username})
+            return jsonify({"message": "Logout successful"}), 200
+
+    return jsonify({"message": "Logout failed"}), 400
+
+
+@app.route('/online_users', methods=['GET'])
+def online_users():
+    users = load_users()
+    online_users = [user['username'] for user in users if user['online']]
+    return jsonify({"online_users": online_users}), 200
+
+
+@socketio.on('connect')
+def handle_connect():
+    pass
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    pass
+
+
+@socketio.on('invite')
+def handle_invite(data):
+    inviter = data.get('inviter')
+    invitee = data.get('invitee')
+    invitee_sid = get_user_sid(invitee)
+    if invitee_sid:
+        emit('receive_invite', {'inviter': inviter}, room=invitee_sid)
+
+
+user_sids = {}
+
+
+@socketio.on('register')
+def handle_register(data):
+    username = data.get('username')
+    user_sids[username] = request.sid
+
+
+def get_user_sid(username):
+    return user_sids.get(username)
+
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
